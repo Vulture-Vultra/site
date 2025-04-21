@@ -6,7 +6,7 @@ import {
   Twitter,
   Github,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 
 export default function Footer() {
@@ -20,10 +20,10 @@ export default function Footer() {
   ];
 
   const socialLinks = [
-    { icon: Github, href: "#", label: "GitHub" },
-    { icon: MessageCircle, href: "#", label: "Discord" },
-    { icon: Send, href: "#", label: "Telegram" },
-    { icon: Twitter, href: "#", label: "Twitter" },
+    // { icon: Github, href: "#", label: "GitHub" },
+    // { icon: MessageCircle, href: "#", label: "Discord" },
+    { icon: Send, href: "https://t.me/vultrafi", label: "Telegram" },
+    { icon: Twitter, href: "https://x.com/VultraFi", label: "Twitter" },
   ];
 
   const handleLinkClick = (e, targetId) => {
@@ -76,6 +76,7 @@ export default function Footer() {
                   href={social.href}
                   className="w-7 h-7 bg-white/10 border rounded-2xl flex items-center justify-center hover:bg-emerald-800/50 transition-colors"
                   aria-label={social.label}
+                  target= "_blank"
                 >
                   <Icon className="w-4 h-4" />
                 </a>
@@ -92,16 +93,17 @@ export default function Footer() {
               <div className="flex gap-3 mb-4">
                 {socialLinks.map((social) => {
                   const Icon = social.icon;
-                  return (
-                    <a
-                      key={social.label}
-                      href={social.href}
-                      className="w-10 h-10 bg-white/10 border rounded-2xl flex items-center justify-center hover:bg-gray-300 transition-colors"
-                      aria-label={social.label}
-                    >
-                      <Icon className="w-5 h-5" />
-                    </a>
-                  );
+                  // return (
+                  //   <a
+                  //     key={social.label}
+                  //     href={social.href}
+                  //     className="w-10 h-10 bg-white/10 border rounded-2xl flex items-center justify-center hover:bg-gray-300 transition-colors"
+                  //     aria-label={social.label}
+                  //     target= "_blank"
+                  //   >
+                  //     <Icon className="w-5 h-5" />
+                  //   </a>
+                  // );
                 })}
               </div>
               <button

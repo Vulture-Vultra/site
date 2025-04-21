@@ -38,14 +38,16 @@ function Text() {
       </div>
       <div className={`${isVisible ? 'drop-in' : ''}`}>
         <h1 className='text-white font-manrope'>
-          At VULTRA, trading isn’t just about profits—it’s about making a difference. We proudly contribute a portion of our earnings to charitable causes that create lasting, positive change in communities around the world.
-        </h1>
-      </div>
-      <div className={`${isVisible ? 'drop-in' : ''}`}>
+          At VULTRA, trading isn’t just about profits, it’s about making a difference. </h1>
         <h1 className='text-white font-manrope'>
-          At VULTRA, trading isn’t just about profits—it’s about making a difference. We proudly contribute a portion of our earnings to charitable causes that create lasting, positive change in communities around the world.
+         We proudly contribute a portion of our earnings to charitable causes that create lasting, positive change in communities around the world.
         </h1>
       </div>
+      {/* <div className={`${isVisible ? 'drop-in' : ''}`}>
+        <h1 className='text-white font-manrope'>
+          At VULTRA, trading isn’t just about profits, it’s about making a difference. We proudly contribute a portion of our earnings to charitable causes that create lasting, positive change in communities around the world.
+        </h1>
+      </div> */}
 
       <style jsx>{`
         .drop-in {

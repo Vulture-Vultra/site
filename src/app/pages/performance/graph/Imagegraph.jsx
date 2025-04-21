@@ -95,7 +95,13 @@ const Imagegraph = () => {
             <div className="relative">
               {isDatePickerOpen && (
                 <div className="relative z-10 flex flex-row gap-3">
-                  <DatePicker
+                   <button
+                key={'year'}
+                className={`px-3 py-1 rounded-md text-sm capitalize bg-[#C5A042] text-white`}
+              >
+                Year
+              </button>
+              <DatePicker
                     selected={selectedDate}
                     onChange={(date) => setSelectedDate(date)}
                     selectsStart

@@ -66,12 +66,12 @@ export default function Navbar({ transparent }) {
           ))}
         </div>
         <div>
-          <button
+          {/* <button
             className={`rounded-full hidden md:flex hover:bg-white/20 border-white/20 lg:px-10 px-2 text-sm font-medium text-white transition-colors hover:font-bold ${navbg}`}
             onClick={toggleModal}
           >
             CONTACT US
-          </button>
+          </button> */}
         </div>
 
        
@@ -118,12 +118,12 @@ export default function Navbar({ transparent }) {
                     {item.toUpperCase()}
                   </a>
                 ))}
-                <button
+                {/* <button
                   className="inline-block rounded-full bg-[#156662] px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[#156662]/90 hover:font-bold"
                   onClick={toggleModal}
                 >
                   CONTACT US
-                </button>
+                </button> */}
               </div>
             </motion.div>
           )}

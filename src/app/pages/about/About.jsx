@@ -49,9 +49,9 @@ function About() {
               </h1>
             </div>
 
-            <div>
+            {/* <div>
               <button className="h-14 w-40 rounded-full bg-[#C5A042] text-white font-manrope">Learn More</button>
-            </div>
+            </div> */}
           </div>
         </div>
         <div className="md:w-1/2 w-full">

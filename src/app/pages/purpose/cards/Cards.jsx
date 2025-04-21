@@ -73,15 +73,15 @@ function Cards() {
             <Image src='/profit.png' width={24} height={24} alt='profit' />
           </span>
           <h1 className='text-[#C5A042] font-bold text-lg'>
-            {isVisible && <CountUp end={80} duration={5} />}+
+            {isVisible && <CountUp end={25} duration={5} />}+
           </h1>
-          <h1 className='text-white'>Youth Empowerment Programs Funded</h1>
+          <h1 className='text-white'>Youth Empowerment Programs</h1>
         </div>
       </div>
       <div>
         <button className='w-full px-3 sm:w-96 h-16 mt-10 rounded-full text-white backdrop-blur-md bg-[#C5A042] hover:bg-yellow-400 font-bold text-lg items-center'>
           Learn More About Our Mission
-        </button>
+        </button> this button will be removed or hidden
       </div>
     </div>
   )
