@@ -38,6 +38,8 @@ function Login({ onLogin }) {
         toast.error(response.data.message || "Login failed");
       }
     } catch (error) {
+      console.log(error);
+      
       setLoading(false);
       toast.error(
         error.response?.data?.message || "An error occurred during login"

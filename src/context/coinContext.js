@@ -1,8 +1,6 @@
-'use client';
+"use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
-import constant from "@/constant";
-
 
 const CoinContext = createContext();
 
@@ -15,14 +13,41 @@ const CoinProvider = ({ children }) => {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [timeFrame, setTimeFrame] = useState("daily");
+  const [popupMessage, setPopupMessage] = useState(""); // State for popup message
+  const [isPopupVisible, setIsPopupVisible] = useState(false); // State to control popup visibility
+
+  // Utility function to validate date format
+  const validateDateFormat = (date) => {
+    const regex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/; // MM/dd/yyyy format
+    if (date instanceof Date && !isNaN(date)) {
+      return true; // Valid Date object
+    } else if (typeof date === "string" && regex.test(date)) {
+      return true; // Matches MM/dd/yyyy format
+    }
+    return false;
+  };
+
+  // Function to handle invalid dates
+  const handleInvalidDates = (date, dateType) => {
+    if (!validateDateFormat(date)) {
+      // Set the popup message and make it visible
+      // setPopupMessage(
+      //   `Invalid ${dateType} format. Please use MM/dd/yyyy. You will be redirected to the next page.`
+      // );
+      // setIsPopupVisible(true);
+
+      // Sending the invalid date to the next page (example logic)
+      
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
     async function fetchData() {
       try {
         setIsLoading(true);
-        const response = await axios.get(
-          `/api/excel/getAllData`
-        );
+        const response = await axios.get(`/api/excel/getAllData`);
         const data = response.data;
 
         setCoinsData(data);
@@ -33,19 +58,20 @@ const CoinProvider = ({ children }) => {
           setUniqueTickers(uniqueTickersArray);
 
           if (data.length > 0) {
-
             const dates = data.map((item) => new Date(item.Date));
             const minDate = new Date(Math.min(...dates));
-            setStartDate(minDate);
-           
-            
-            const maxDate = new Date(Math.max(...dates));  
-            setEndDate(maxDate);
-            
-            
-           
+            const maxDate = new Date(Math.max(...dates));
+
+            // Validate and set startDate
+            if (handleInvalidDates(minDate, "startDate")) {
+              setStartDate(minDate);
+            }
+
+            // Validate and set endDate
+            if (handleInvalidDates(maxDate, "endDate")) {
+              setEndDate(maxDate);
+            }
           }
-          
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -71,10 +97,22 @@ const CoinProvider = ({ children }) => {
   const resetFilters = () => {
     setSelectedCoin("All-Ticker");
     setTimeFrame("monthly");
-    const earliestDate = new Date(Math.min(...coinsData.map((item) => new Date(item.Date))));
-    setStartDate(earliestDate);
-    const latestDate = new Date(Math.max(...coinsData.map((item) => new Date(item.Date))));
-    setEndDate(latestDate);
+    const earliestDate = new Date(
+      Math.min(...coinsData.map((item) => new Date(item.Date)))
+    );
+    const latestDate = new Date(
+      Math.max(...coinsData.map((item) => new Date(item.Date)))
+    );
+
+    // Validate and reset startDate
+    if (handleInvalidDates(earliestDate, "startDate")) {
+      setStartDate(earliestDate);
+    }
+
+    // Validate and reset endDate
+    if (handleInvalidDates(latestDate, "endDate")) {
+      setEndDate(latestDate);
+    }
   };
 
   return (
@@ -96,6 +134,38 @@ const CoinProvider = ({ children }) => {
       }}
     >
       {children}
+      {isPopupVisible && (
+        <div
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            backgroundColor: "white",
+            padding: "20px",
+            boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+            borderRadius: "8px",
+            zIndex: 9999,
+            textAlign: "center",
+          }}
+        >
+          <p>{popupMessage}</p>
+          <button
+            onClick={() => setIsPopupVisible(false)}
+            style={{
+              marginTop: "10px",
+              padding: "8px 12px",
+              backgroundColor: "#007bff",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+            }}
+          >
+            Close
+          </button>
+        </div>
+      )}
     </CoinContext.Provider>
   );
 };
