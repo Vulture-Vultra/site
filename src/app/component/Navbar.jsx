@@ -50,7 +50,7 @@ export default function Navbar({ transparent }) {
       <div className="mx-auto flex lg:h-14 h-8 max-w-7xl items-center justify-between px-4 sm:px-6">
        
         <div>
-          <Image src="/logo2.png " width={200} height={100} alt="Logo" />
+          <Image src="/logo2.png" width={200} height={100} alt="Logo" />
         </div>
 
         <div className={`hidden items-center gap-5 lg:gap-12 md:flex backdrop-blur-md rounded-full ${navbg}`}>
