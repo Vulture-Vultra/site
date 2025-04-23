@@ -69,9 +69,9 @@ function Card() {
   const getSelectedCoinStats = () => {
     if (selectedCoinData.length === 0) {
       return {
-        totalProfit: 80,
-        spotROI: 100,
-        futuresROI: 150,
+        totalProfit: 0,
+        spotROI: 0,
+        futuresROI: 0,
       };
     }
 
