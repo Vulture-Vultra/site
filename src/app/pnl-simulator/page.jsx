@@ -41,7 +41,7 @@ export default function PnlSimulatorPage() {
   const chartRef = useRef(null);
   const [pluginsRegistered, setPluginsRegistered] = useState(false);
 
-  const TRADE_CAPITAL_ALLOCATION_PERCENT = 0.02;
+  const TRADE_CAPITAL_ALLOCATION_PERCENT = 0.10;
 
   const formatNumberWithCommas = (num) => {
     if (num === null || num === undefined || isNaN(num)) return 'N/A';
