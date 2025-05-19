@@ -1,17 +1,24 @@
+// src/app/component/Navbar.jsx
 "use client";
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link"; // <--- IMPORT Link from Next.js
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { TwitterIcon as TikTok, MessageCircle, Send, Twitter, Github } from "lucide-react";
+import { BarChart3, Menu as MenuIcon, X as XIcon } from "lucide-react"; // lucide-react icons
 
 export default function Navbar({ transparent }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false); // Assuming you might use this later
 
-  const navClass = transparent && !isScrolled ? "bg-transparent top-4" : "bg-[#00362E] top-0 py-2";
-  const navbg = transparent && !isScrolled ? "bg-white/10 p-6" : "p-2";
+  const navContainerBaseClass = "sticky z-50 w-full font-poppins transition-all duration-300";
+  const navContainerScrolledClass = "bg-[#00362E] top-0 py-2 shadow-md";
+  const navContainerTransparentClass = "bg-transparent top-0 md:top-4 py-2"; // Ensure some padding even when transparent
+
+  // Styles for the inner bar that holds the links (the rounded one)
+  const innerNavBgBaseClass = "backdrop-blur-md rounded-full";
+  const innerNavBgScrolledClass = "p-2"; // Less padding when scrolled
+  const innerNavBgTransparentClass = "bg-white/10 p-4 md:p-6"; // More padding when transparent
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,84 +28,76 @@ export default function Navbar({ transparent }) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleLinkClick = (e, targetId) => {
-    // This function is for same-page scrolling.
-    // For Next.js Link components, direct navigation will happen.
-    // We might not need to call this for the PnL Simulator link if it's a Next.js Link.
+  const handleAnchorLinkClick = (e, targetId) => {
     e.preventDefault();
     const targetElement = document.getElementById(targetId);
     if (targetElement) {
       targetElement.scrollIntoView({ behavior: "smooth" });
     }
-    setIsMenuOpen(false); // Close mobile menu on click
+    setIsMenuOpen(false);
+  };
+  
+  const handleRouteLinkClick = () => {
+    setIsMenuOpen(false);
   };
 
-  const toggleModal = () => {
-    setIsModalOpen(!isModalOpen);
-  };
+  const toggleModal = () => setIsModalOpen(!isModalOpen);
 
   const menuVariants = {
     closed: { opacity: 0, x: "-100%" },
     open: { opacity: 1, x: 0 },
   };
 
-  const socialLinks = [
-    { icon: Github, href: "#", label: "GitHub" },
-    { icon: MessageCircle, href: "#", label: "Discord" },
-    { icon: Send, href: "#", label: "Telegram" },
-    { icon: Twitter, href: "#", label: "Twitter" },
-  ];
-
-  const navItems = ["home", "about", "services", "testimonials", "blogs"]; // Keep your existing items
+  // Main navigation items for the center section
+  const mainNavItems = ["home", "about", "services", "testimonials", "blogs"];
 
   return (
-    <nav className={`sticky z-50 w-full font-poppins transition-all duration-300 ${navClass}`}>
-      <div className="mx-auto flex lg:h-14 h-8 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <div>
-          <Link href="/"> {/* Make logo a link to home */}
-            <Image src="/logo2.png" width={200} height={100} alt="Logo" priority /> {/* Added priority for LCP */}
+    <nav className={`${navContainerBaseClass} ${transparent && !isScrolled ? navContainerTransparentClass : navContainerScrolledClass}`}>
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 h-16 md:h-20"> {/* Main flex container */}
+        
+        {/* 1. Logo (Left) */}
+        <div className="flex-shrink-0">
+          <Link href="/">
+            <Image src="/logo2.png" width={180} height={45} alt="Vultra Logo" priority />
           </Link>
         </div>
 
-        {/* Desktop Navigation */}
-        <div className={`hidden items-center gap-5 lg:gap-12 md:flex backdrop-blur-md rounded-full ${navbg}`}>
-          {navItems.map((item) => (
+        {/* 2. Centered Navigation Links (Desktop) */}
+        <div className={`hidden md:flex items-center gap-4 lg:gap-8 ${innerNavBgBaseClass} ${transparent && !isScrolled ? innerNavBgTransparentClass : innerNavBgScrolledClass}`}>
+          {mainNavItems.map((item) => (
             <a
               key={item}
-              href={`#${item}`} // These are for on-page scrolling
-              className="text-sm font-medium text-white transition-colors hover:text-white/80 hover:font-bold"
-              onClick={(e) => handleLinkClick(e, item)}
+              href={`#${item}`}
+              className="text-xs lg:text-sm font-medium text-white transition-colors hover:text-emerald-300 px-2 lg:px-3"
+              onClick={(e) => handleAnchorLinkClick(e, item)}
             >
               {item.toUpperCase()}
             </a>
           ))}
-          {/* ADD PnL Simulator Link for Desktop */}
-          <Link
-            href="/pnl-simulator"
-            className="text-sm font-medium text-white transition-colors hover:text-white/80 hover:font-bold"
-            onClick={() => setIsMenuOpen(false)} // Close mobile menu if open (though this is desktop)
-          >
-            PNL SIMULATOR
-          </Link>
-        </div>
-        <div>
-          {/* Contact Us Button (commented out in your original) */}
         </div>
 
-        {/* Mobile Menu Burger Icon */}
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="flex h-10 w-10 items-center justify-center rounded-md text-white hover:bg-[#156662]/50 md:hidden"
-          aria-label="Toggle menu"
-        >
-          <svg /* ... SVG code ... */ >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"}
-            />
-          </svg>
-        </button>
+        {/* 3. PNL Simulator Button (Right - Desktop) */}
+        <div className="hidden md:flex flex-shrink-0">
+          <Link
+            href="/pnl-simulator"
+            className={`flex items-center gap-2 rounded-full border border-white/30 px-3 py-2 lg:px-5 lg:py-2.5 text-xs lg:text-sm font-semibold text-white transition-all hover:bg-emerald-500/90 hover:border-emerald-500 ${transparent && !isScrolled ? "bg-white/10 hover:bg-emerald-500/30" : "bg-[#004A3F] hover:bg-emerald-600"}`}
+            onClick={handleRouteLinkClick}
+          >
+            <BarChart3 size={16} className="lg:size-5"/>
+            <span>SIMULATOR</span>
+          </Link>
+        </div>
+       
+        {/* Mobile Menu Burger Icon (Only visible on small screens) */}
+        <div className="md:hidden">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="flex h-10 w-10 items-center justify-center rounded-md text-white hover:bg-[#156662]/50"
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <XIcon size={24} /> : <MenuIcon size={24} />}
+          </button>
+        </div>
 
         {/* Mobile Menu Overlay */}
         <AnimatePresence>
@@ -108,40 +107,66 @@ export default function Navbar({ transparent }) {
               animate="open"
               exit="closed"
               variants={menuVariants}
-              transition={{ duration: 0.3 }}
-              className="fixed inset-y-0 left-0 w-64 bg-[#00362E] px-4 py-6 md:hidden shadow-lg" // Added shadow
-              style={{ paddingTop: '4rem' }} // Add padding to avoid overlap with potential fixed header elements
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed inset-0 h-screen bg-[#002a24]/95 backdrop-blur-md md:hidden px-6 py-8 z-40"
+              style={{ top: '0', left: '0' }}
             >
-              <div className="flex flex-col space-y-4">
-                {navItems.map((item) => (
+              <div className="flex justify-between items-center mb-10">
+                 <Link href="/" onClick={() => setIsMenuOpen(false)}>
+                    <Image src="/logo2.png" width={150} height={37} alt="Vultra Logo" />
+                 </Link>
+                <button onClick={() => setIsMenuOpen(false)} className="text-white">
+                  <XIcon size={28} />
+                </button>
+              </div>
+              <div className="flex flex-col items-center space-y-6 mt-10">
+                {mainNavItems.map((item) => (
                   <a
                     key={item}
                     href={`#${item}`}
-                    className="text-lg font-medium text-white transition-colors hover:text-[#C5A042]" // Example hover color
-                    onClick={(e) => handleLinkClick(e, item)}
+                    className="text-xl font-medium text-gray-200 transition-colors hover:text-emerald-300 py-2"
+                    onClick={(e) => handleAnchorLinkClick(e, item)}
                   >
                     {item.toUpperCase()}
                   </a>
                 ))}
-                {/* ADD PnL Simulator Link for Mobile */}
+                <hr className="w-3/4 border-gray-700 my-4"/>
                 <Link
                   href="/pnl-simulator"
-                  className="text-lg font-medium text-white transition-colors hover:text-[#C5A042]" // Example hover color
-                  onClick={() => setIsMenuOpen(false)} // Close menu on click
+                  className="flex items-center gap-2 text-xl font-medium text-gray-200 transition-colors hover:text-emerald-300 py-2"
+                  onClick={handleRouteLinkClick}
                 >
-                  PNL SIMULATOR
+                  <BarChart3 size={22} />
+                  SIMULATOR
                 </Link>
-                {/* Contact Us Button (commented out in your original) */}
+                 {/* Example: Contact Us button for mobile menu
+                <button
+                  className="mt-4 inline-block rounded-full bg-emerald-500 px-8 py-3 text-lg font-medium text-white transition-colors hover:bg-emerald-600"
+                  onClick={() => { toggleModal(); setIsMenuOpen(false); }}
+                >
+                  CONTACT US
+                </button>
+                */}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Contact Modal (remains the same) */}
+      {/* Contact Modal (if you plan to use it) */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          {/* ... modal content ... */}
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]"> {/* Ensure modal is on top */}
+          <div className="bg-[#00362E] p-8 rounded-lg max-w-sm w-full text-center text-white shadow-2xl">
+            <h2 className="text-2xl font-bold mb-6">Contact Information</h2>
+            <p className="mb-4 text-lg">Email: info.social@vultra.co</p>
+            {/* Add social links here if needed */}
+            <button
+              className="mt-4 bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600 transition-colors text-lg"
+              onClick={toggleModal}
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
     </nav>
