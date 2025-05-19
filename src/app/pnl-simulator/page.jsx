@@ -1,35 +1,25 @@
 // src/app/pnl-simulator/page.jsx
 "use client";
 
-import { useState, useEffect, useRef, useMemo } // Added useMemo
-from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, TimeScale
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
-// zoomPlugin will be imported dynamically
+import LineChartLoadingSpinner from './LineChartLoadingSpinner'; // Assuming it's in the same folder
 
 const Line = dynamic(() => import('react-chartjs-2').then((mod) => mod.Line), {
   ssr: false,
 });
 
-// Helper for safely stringifying objects for logging
-const getCircularReplacer = () => {
-  const seen = new WeakSet();
-  return (key, value) => {
-    if (value instanceof Date) { return value.toISOString(); }
-    if (typeof value === "object" && value !== null) {
-      if (seen.has(value)) { return "[Circular]"; }
-      seen.add(value);
-    }
-    return value;
-  };
-};
+// Helper for safely stringifying objects for logging (if you need it for debugging)
+// const getCircularReplacer = () => { /* ... */ };
 
 export default function PnlSimulatorPage() {
   const [initialTradeData, setInitialTradeData] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isSimulating, setIsSimulating] = useState(false);
   const [error, setError] = useState(null);
   const [pluginsRegistered, setPluginsRegistered] = useState(false);
 
@@ -45,6 +35,17 @@ export default function PnlSimulatorPage() {
   const chartRef = useRef(null);
   const TRADE_CAPITAL_ALLOCATION_PERCENT = 0.10;
 
+  const minDataTimestampForKey = useMemo(() => {
+    const allDataTimestamps = [];
+    [...simulationResultsSpot, ...simulationResultsFutures].forEach(result => {
+        if (result && result.dateObj && !isNaN(result.dateObj.getTime())) {
+            allDataTimestamps.push(result.dateObj.getTime());
+        }
+    });
+    if (allDataTimestamps.length > 0) return Math.min(...allDataTimestamps);
+    return Date.now();
+  }, [simulationResultsSpot, simulationResultsFutures]);
+
   const formatNumberWithCommas = (num) => {
     if (num === null || num === undefined || isNaN(num)) return 'N/A';
     return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -56,14 +57,21 @@ export default function PnlSimulatorPage() {
     let isMounted = true;
     if (typeof window !== "undefined" && !pluginsRegistered) {
       async function registerPlugins() {
+        console.log("page.jsx: Attempting to register plugins...");
         try {
             const zoomPluginModule = await import('chartjs-plugin-zoom');
             const zoomPlugin = zoomPluginModule.default;
             ChartJS.register( CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, TimeScale, zoomPlugin );
-            if (isMounted) setPluginsRegistered(true);
+            if (isMounted) {
+                setPluginsRegistered(true);
+                console.log("page.jsx: Plugins registered.");
+            }
         } catch (pluginError) {
             console.error("PnlSimulatorPage: Effect 1 - Error registering chart plugins:", pluginError);
-            if (isMounted) setError("Failed to load chart components. Please refresh.");
+            if (isMounted) {
+                setError("Failed to load chart components. Please refresh.");
+                setIsLoadingData(false); 
+            }
         }
       }
       registerPlugins();
@@ -75,10 +83,10 @@ export default function PnlSimulatorPage() {
   useEffect(() => {
     let isMounted = true;
     if (!pluginsRegistered) {
-      setIsLoadingData(true); 
-      return;
+      return; 
     }
     async function fetchData() {
+      console.log("page.jsx: Fetching trade data (plugins registered)...");
       setIsLoadingData(true); setError(null);
       try {
         const response = await fetch('/api/get-trades');
@@ -88,7 +96,9 @@ export default function PnlSimulatorPage() {
         }
         const data = await response.json();
         if (isMounted) {
-          setInitialTradeData(data || []);
+          const sortedData = (data || []).sort((a, b) => new Date(a.date) - new Date(b.date));
+          setInitialTradeData(sortedData);
+          console.log("page.jsx: Trade data received and set:", sortedData.length);
         }
       } catch (e) {
         console.error("PnlSimulatorPage: Effect 2 (FetchData) - Error fetching trade data:", e);
@@ -103,30 +113,34 @@ export default function PnlSimulatorPage() {
 
   // Effect 3: Run simulations
   useEffect(() => {
+    let baseDateForStartEpoch;
+    if (initialTradeData && initialTradeData.length > 0) {
+        const firstTradeDate = new Date(initialTradeData[0].date);
+        baseDateForStartEpoch = !isNaN(firstTradeDate.getTime()) ? firstTradeDate.getTime() : 0;
+    } else {
+        baseDateForStartEpoch = 0;
+    }
+    const validBaseStartDate = new Date(baseDateForStartEpoch);
+
     if (isLoadingData || !pluginsRegistered || !initialTradeData) {
       const startCapS = parseFloat(initialCapitalSpot) || 0;
       const startCapF = parseFloat(initialCapitalFutures) || 0;
-      // Use a very early but distinct date for "Start" if no data, or the first trade's date
-      const baseDateForStart = initialTradeData && initialTradeData.length > 0 ? new Date(initialTradeData[0].date) : new Date(0); // Epoch if no trades
-      const validBaseStartDate = !isNaN(baseDateForStart.getTime()) ? baseDateForStart : new Date(0);
-
       const startPoint = { dateObj: validBaseStartDate, date: "Start", capital: 0, netPnl: 0, tradePnl: 0, tradePnlPercent: 0, ticker: "N/A", direction: "N/A", status: "N/A" };
       setSimulationResultsSpot([{...startPoint, capital: startCapS }]);
       setSimulationResultsFutures([{...startPoint, capital: startCapF }]);
       return;
     }
-     if (initialTradeData.length === 0 && !isLoadingData) {
+     if (initialTradeData.length === 0 && !isLoadingData) { 
         const startCapS = parseFloat(initialCapitalSpot) || 0;
         const startCapF = parseFloat(initialCapitalFutures) || 0;
-        const baseDateForStart = new Date(0); // Epoch for "Start" when no trades
-        const startPoint = { dateObj: baseDateForStart, date: "Start", capital: 0, netPnl: 0, tradePnl: 0, tradePnlPercent: 0, ticker: "N/A", direction: "N/A", status: "N/A" };
+        const startPoint = { dateObj: validBaseStartDate, date: "Start", capital: 0, netPnl: 0, tradePnl: 0, tradePnlPercent: 0, ticker: "N/A", direction: "N/A", status: "N/A" };
         setSimulationResultsSpot([{ ...startPoint, capital: startCapS }]);
         setSimulationResultsFutures([{ ...startPoint, capital: startCapF }]);
         return;
     }
 
-    const baseStartDate = initialTradeData.length > 0 ? new Date(initialTradeData[0].date) : new Date(0);
-    const validBaseStartDate = !isNaN(baseStartDate.getTime()) ? baseStartDate : new Date(0);
+    setIsSimulating(true);
+    console.log("page.jsx: Simulation useEffect - RUNNING simulations.");
 
     let spotCap = parseFloat(initialCapitalSpot); if (isNaN(spotCap) || spotCap < 0) spotCap = 0;
     let currentCapitalS = spotCap;
@@ -134,7 +148,7 @@ export default function PnlSimulatorPage() {
     initialTradeData.forEach(trade => {
       let tradePnlForPointS = 0; let tradePnlPercentForPointS = trade.pnlPercentSpot;
       const tradeDate = new Date(trade.date);
-      const validTradeDate = !isNaN(tradeDate.getTime()) ? tradeDate : new Date(); // Fallback to now if date is invalid
+      const validTradeDate = !isNaN(tradeDate.getTime()) ? tradeDate : new Date(); 
       if (typeof trade.pnlPercentSpot === 'number' && trade.pnlPercentSpot !== 0 && currentCapitalS > 0) {
         const capitalForThisTrade = currentCapitalS * TRADE_CAPITAL_ALLOCATION_PERCENT;
         const pnlAmount = capitalForThisTrade * (trade.pnlPercentSpot / 100);
@@ -156,7 +170,7 @@ export default function PnlSimulatorPage() {
     initialTradeData.forEach(trade => {
       let tradePnlForPointF = 0; let tradePnlPercentForPointF = trade.pnlPercentFutures;
       const tradeDate = new Date(trade.date);
-      const validTradeDate = !isNaN(tradeDate.getTime()) ? tradeDate : new Date(); // Fallback to now
+      const validTradeDate = !isNaN(tradeDate.getTime()) ? tradeDate : new Date(); 
       if (typeof trade.pnlPercentFutures === 'number' && trade.pnlPercentFutures !== 0 && currentCapitalF > 0) {
         const capitalForThisTrade = currentCapitalF * TRADE_CAPITAL_ALLOCATION_PERCENT;
         const pnlAmount = capitalForThisTrade * (trade.pnlPercentFutures / 100);
@@ -171,23 +185,25 @@ export default function PnlSimulatorPage() {
       });
     });
     setSimulationResultsFutures(resultsF);
+    setIsSimulating(false);
+    console.log("page.jsx: Simulations complete.");
   }, [initialCapitalSpot, initialCapitalFutures, initialTradeData, pluginsRegistered, isLoadingData]);
 
   // Effect 4: Prepare chart data
   useEffect(() => {
-    if (!pluginsRegistered || isLoadingData) {
-        if(!isLoadingData && pluginsRegistered) setChartInstanceData({ datasets: [] });
+    if (!pluginsRegistered || isLoadingData || isSimulating) {
+        if(!isLoadingData && pluginsRegistered && !isSimulating) setChartInstanceData({ datasets: [] });
         return;
     }
-    // Condition to plot: at least the "Start" point AND one actual trade.
-    // Or, if you want to plot just the "Start" point, change length condition to > 0.
     if (!simulationResultsSpot || !simulationResultsFutures || (simulationResultsSpot.length <= 1 && simulationResultsFutures.length <= 1) ) {
-        setChartInstanceData({ datasets: [] });
+        setChartInstanceData({ datasets: [] }); 
+        if (chartRef.current && pluginsRegistered && !isLoadingData && !isSimulating) {
+            chartRef.current.update('none');
+        }
         return;
     }
     const datasets = [];
-    // Plot if there's more than just the "Start" point, or adjust if "Start" alone should be plotted.
-    if (simulationResultsSpot.length > 0) { // Changed from > 1 to > 0 to always include start if it exists
+    if (simulationResultsSpot.length > 0) { 
       datasets.push({
         label: 'Spot Account Balance',
         data: simulationResultsSpot.map(r => ({ x: r.dateObj.getTime(), y: r.capital, originalSimulationResult: r })),
@@ -195,7 +211,7 @@ export default function PnlSimulatorPage() {
         pointRadius: 2, pointHoverRadius: 5, pointBackgroundColor: '#03B085', pointBorderColor: '#03B085',
       });
     }
-    if (simulationResultsFutures.length > 0) { // Changed from > 1 to > 0
+    if (simulationResultsFutures.length > 0) { 
       datasets.push({
         label: 'Futures Account Balance',
         data: simulationResultsFutures.map(r => ({ x: r.dateObj.getTime(), y: r.capital, originalSimulationResult: r })),
@@ -204,146 +220,104 @@ export default function PnlSimulatorPage() {
       });
     }
     setChartInstanceData({ datasets });
-  }, [simulationResultsSpot, simulationResultsFutures, pluginsRegistered, isLoadingData]);
+
+    if (chartRef.current && pluginsRegistered && !isLoadingData && !isSimulating) {
+      chartRef.current.update('none'); 
+    }
+  }, [simulationResultsSpot, simulationResultsFutures, pluginsRegistered, isLoadingData, isSimulating]);
 
   // Chart Options
   const chartOptions = useMemo(() => {
-    let minTimestamp = undefined;
-    let maxTimestamp = undefined;
-    const allTimestamps = [];
-
-    // Collect all valid timestamps from the simulation results (including "Start" points)
+    let minDataTimestamp = undefined;
+    let maxDataTimestamp = undefined;
+    const allDataTimestamps = [];
     [...simulationResultsSpot, ...simulationResultsFutures].forEach(result => {
-        if (result && result.dateObj && !isNaN(result.dateObj.getTime())) {
-            allTimestamps.push(result.dateObj.getTime());
-        }
+        if (result && result.dateObj && !isNaN(result.dateObj.getTime())) { allDataTimestamps.push(result.dateObj.getTime()); }
     });
-
-    if (allTimestamps.length > 0) {
-        minTimestamp = Math.min(...allTimestamps);
-        maxTimestamp = Math.max(...allTimestamps);
+    if (allDataTimestamps.length > 0) {
+        minDataTimestamp = Math.min(...allDataTimestamps); maxDataTimestamp = Math.max(...allDataTimestamps);
     }
-
-    let scaleMin = minTimestamp;
-    let scaleMax = maxTimestamp;
-    const epochTime = new Date(0).getTime();
-
-    // If the only data point is the "Start" at epoch (or no valid points resulting in undefined min/max),
-    // let Chart.js auto-scale the view for a cleaner empty state.
-    // The limiters will still use the strict minTimestamp/maxTimestamp.
-    if ((minTimestamp === epochTime && maxTimestamp === epochTime && allTimestamps.length <= 1) || minTimestamp === undefined) {
-        scaleMin = undefined; 
-        scaleMax = undefined;
+    let finalScaleMin = minDataTimestamp; let finalScaleMax = maxDataTimestamp;
+    if (minDataTimestamp !== undefined && minDataTimestamp === maxDataTimestamp) {
+        const oneDay = 24 * 60 * 60 * 1000; finalScaleMax = minDataTimestamp + oneDay;
     }
-    
     return {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false, axis: 'x' },
       scales: {
         x: {
-          type: 'time', time: { unit: 'day', tooltipFormat: 'MMM dd, yyyy', displayFormats: { day: 'MMM dd, yy' } },
+          type: 'time', 
+          time: { unit: 'day', tooltipFormat: 'MMM dd, yyyy', displayFormats: { day: 'MMM dd, yy' } },
           title: { display: true, text: 'Date', color: '#B0B0B0', font: { family: 'var(--font-geist-mono)' } },
-          ticks: { source: 'auto', color: '#B0B0B0', font: { family: 'var(--font-geist-mono)' }, maxRotation: 45, minRotation: 30, autoSkipPadding: 30 },
-          grid: { display: false }, 
-          min: scaleMin, // Use potentially undefined scaleMin
-          max: scaleMax, // Use potentially undefined scaleMax
+          ticks: { source: 'auto', color: '#B0B0B0', font: { family: 'var(--font-geist-mono)' }, maxRotation: 45, minRotation: 30, autoSkipPadding: 30, },
+          grid: { display: false }, min: finalScaleMin, max: finalScaleMax,
+          offset: false, bounds: 'data', 
         },
         y: {
-          beginAtZero: false, title: { display: true, text: 'Account Capital ($)', color: '#B0B0B0', font: { family: 'var(--font-geist-mono)' } },
+          beginAtZero: false, 
+          title: { display: true, text: 'Account Capital ($)', color: '#B0B0B0', font: { family: 'var(--font-geist-mono)' } },
           ticks: { color: '#B0B0B0', font: { family: 'var(--font-geist-mono)' }, callback: value => `$${formatNumberWithCommas(value)}` },
           grid: { color: 'rgba(200, 200, 200, 0.1)' }
         }
       },
       plugins: {
-        legend: { position: 'top', labels: { color: '#E0E0E0', font: { family: 'var(--font-geist-sans)' } } },
-        title: { display: true, text: 'Hypothetical PnL Yield Curve', color: '#E0E0E0', font: { size: 18, family: 'var(--font-geist-sans)', weight: 'bold' } },
+        legend: { position: 'top', labels: { color: '#E0E0E0', font: { family: 'var(--font-geist-sans)' }}},
+        title: { display: true, text: 'Hypothetical PnL Yield Curve', color: '#E0E0E0', font: { size: 18, family: 'var(--font-geist-sans)', weight: 'bold' }},
         tooltip: {
           titleFont: { family: 'var(--font-geist-sans)' }, bodyFont: { family: 'var(--font-geist-sans)' },
           backgroundColor: 'rgba(20, 20, 20, 0.9)', titleColor: '#03B085', bodyColor: '#E0E0E0',
           borderColor: '#C5A042', borderWidth: 1, padding: 10,
           callbacks: {
-            title: (tooltipItems) => { const date = new Date(tooltipItems[0].parsed.x); return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); },
+            title: (tooltipItems) => { if (!tooltipItems || tooltipItems.length === 0) return ''; const date = new Date(tooltipItems[0].parsed.x); return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); },
             label: (context) => { const datasetLabel = context.dataset.label || ''; const value = context.parsed.y; return value !== null ? `${datasetLabel}: $${formatNumberWithCommas(value)}` : ''; },
             afterBody: (tooltipItems) => {
-              const lines = []; const dataIndex = tooltipItems[0].dataIndex;
-              // Ensure the data point exists in the simulation results for the specific dataset
+              if (!tooltipItems || tooltipItems.length === 0) return []; const lines = [];
+              const dataIndex = tooltipItems[0].dataIndex;
               const simDetails = tooltipItems[0].dataset.data[dataIndex]?.originalSimulationResult;
               if (simDetails && simDetails.date !== "Start") {
                 lines.push(`Trade: ${simDetails.direction} ${simDetails.ticker} (Status: ${simDetails.status})`);
-                if (simDetails.tradePnlPercent !== 0 && typeof simDetails.tradePnlPercent === 'number') {
-                   lines.push(` PnL: ${simDetails.tradePnlPercent.toFixed(2)}% ($${formatNumberWithCommas(simDetails.tradePnl)})`);
-                }
+                if (simDetails.tradePnlPercent !== 0 && typeof simDetails.tradePnlPercent === 'number') { lines.push(` PnL: ${simDetails.tradePnlPercent.toFixed(2)}% ($${formatNumberWithCommas(simDetails.tradePnl)})`); }
               } return lines;
             }
           }
         },
         zoom: {
-          pan: { 
-            enabled: true, mode: 'x', threshold: 5, 
-            onPanComplete: ({chart}) => chart.update('none'), 
-            limiter: { x: { min: minTimestamp, max: maxTimestamp } } // Limiters use strict min/max
-          },
-          zoom: { 
-            wheel: { enabled: true, speed: 0.1 }, pinch: { enabled: true }, mode: 'x', 
-            onZoomComplete: ({chart}) => chart.update('none'), 
-            limiter: { x: { min: minTimestamp, max: maxTimestamp } } // Limiters use strict min/max
-          }
+          pan: { enabled: true, mode: 'x', threshold: 5 },
+          zoom: { wheel: { enabled: true, speed: 0.1 }, pinch: { enabled: true }, mode: 'x' },
+          limits: { x: { min: minDataTimestamp, max: maxDataTimestamp } }
         }
       },
       onClick: (event, elements) => {
         if (elements.length > 0) {
-          const element = elements[0];
-          const datasetIndex = element.datasetIndex;
-          const dataIndex = element.index;
-          
-          // Determine which simulation result array to use based on datasetIndex
-          let simDataForDate;
-          if (chartInstanceData.datasets[datasetIndex]?.label === 'Spot Account Balance') {
-            simDataForDate = simulationResultsSpot[dataIndex];
-          } else if (chartInstanceData.datasets[datasetIndex]?.label === 'Futures Account Balance') {
-            simDataForDate = simulationResultsFutures[dataIndex];
-          }
-
-          if (!simDataForDate || simDataForDate.date === "Start") {
-            setClickedTradeDetails(null); return;
-          }
-
-          // To show details for both, we need to find the corresponding point in the other simulation if dates align
-          // This assumes that simulationResultsSpot and simulationResultsFutures have corresponding entries for the same trades.
-          // If their lengths or date sequences can differ significantly beyond the "Start" point, this needs more robust matching.
-          const spotDetails = simulationResultsSpot.find(s => s.date === simDataForDate.date && s.ticker === simDataForDate.ticker);
-          const futuresDetails = simulationResultsFutures.find(f => f.date === simDataForDate.date && f.ticker === simDataForDate.ticker);
-
-
+          const { index } = elements[0];
+          if (index === 0) { setClickedTradeDetails(null); return; }
+          const spotDetails = simulationResultsSpot[index];
+          const futuresDetails = simulationResultsFutures[index];
+          const baseInfo = spotDetails || futuresDetails; // One should exist
+          if (!baseInfo) { setClickedTradeDetails(null); return; }
           setClickedTradeDetails({
-              date: simDataForDate.date, 
-              ticker: simDataForDate.ticker, 
-              direction: simDataForDate.direction, 
-              status: simDataForDate.status,
-              spotData: spotDetails, 
-              futuresData: futuresDetails 
+              date: baseInfo.date, ticker: baseInfo.ticker, direction: baseInfo.direction, status: baseInfo.status,
+              spotData: spotDetails, futuresData: futuresDetails 
           });
-
         } else { setClickedTradeDetails(null); }
       },
     };
-  }, [simulationResultsSpot, simulationResultsFutures, formatNumberWithCommas]); // Keep dependencies minimal and correct
+  }, [simulationResultsSpot, simulationResultsFutures, formatNumberWithCommas]); // formatNumberWithCommas is a dependency now
 
-  const resetZoom = () => { 
-    if (chartRef.current) {
-      chartRef.current.resetZoom();
-    }
-  };
+  const resetZoom = () => { if (chartRef.current) chartRef.current.resetZoom(); };
 
-  if (!pluginsRegistered && typeof window !== "undefined") {
-    return <div className="flex justify-center items-center min-h-screen bg-gray-900 text-gray-400 font-manrope"><p>Initializing chart components...</p></div>;
-  }
-  if (isLoadingData && initialTradeData.length === 0 && !error) { 
-    return <div className="flex justify-center items-center min-h-screen bg-gray-900 text-gray-400 font-manrope"><p>Loading trade data...</p></div>;
-  }
-  if (error) {
-    return <div className="flex flex-col justify-center items-center min-h-screen bg-gray-900 text-red-400 font-manrope text-center p-4"><p className="text-xl mb-2">Error Loading Data</p><p className="text-sm">{error}</p></div>;
-  }
+  // --- UPDATED LOADING AND ERROR STATE RENDERING ---
+  
+if (!pluginsRegistered && typeof window !== "undefined") { 
+  return <LineChartLoadingSpinner message="Initializing Chart..." />;
+}
+if (isLoadingData && !error) { 
+  return <LineChartLoadingSpinner message="Loading Trade Data..." />;
+}
+if (isSimulating && !error) { 
+  return <LineChartLoadingSpinner message="Calculating Performance..." />;
+}
+  // --- END UPDATED LOADING STATES ---
 
   return (
     <main className="min-h-screen bg-[#00100D] text-gray-200 p-4 lg:p-8 font-manrope overflow-x-hidden">
@@ -371,15 +345,21 @@ export default function PnlSimulatorPage() {
               </button>
             </div>
             <div className="h-[600px] sm:h-[700px] md:h-[800px] lg:h-[850px] p-2 md:p-4 relative">
-              {(Line && chartInstanceData.datasets && chartInstanceData.datasets.length > 0 && !isLoadingData && pluginsRegistered) ? (
-                <Line ref={chartRef} options={chartOptions} data={chartInstanceData} />
+              {(Line && chartInstanceData.datasets && chartInstanceData.datasets.length > 0 && !isLoadingData && pluginsRegistered && !isSimulating) ? (
+                <Line 
+                  key={minDataTimestampForKey || Date.now()}
+                  ref={chartRef} 
+                  options={chartOptions} 
+                  data={chartInstanceData} 
+                />
               ) : (
                 <p className="text-center text-gray-500 pt-24 text-lg">
-                  {!pluginsRegistered ? "Initializing chart components..." :
-                   isLoadingData ? "Loading & Processing trade data..." :
+                  {!pluginsRegistered ? "Initializing chart..." :
+                   isLoadingData ? "Loading data..." :
+                   isSimulating ? "Calculating..." :
                    (error ? `Error: ${error}` : 
-                     (initialTradeData && initialTradeData.length === 0 && simulationResultsSpot.length <=1 ? "No trade data found to plot." : // Adjusted condition
-                      "Chart will display shortly. Ensure valid capital is entered if needed.")
+                     (initialTradeData && initialTradeData.length === 0 ? "No trade data." : 
+                      "Chart ready. Check inputs if empty.")
                    )
                   }
                 </p>
@@ -400,9 +380,7 @@ export default function PnlSimulatorPage() {
                 <p><strong>Ticker:</strong> <span className="font-semibold text-white">{clickedTradeDetails.ticker}</span></p>
                 <p><strong>Direction:</strong> <span className="font-semibold text-white">{clickedTradeDetails.direction}</span></p>
                 <p><strong>Status:</strong> <span className="font-semibold text-white">{clickedTradeDetails.status}</span></p>
-                
                 <hr className="border-gray-700 my-4" />
-
                 {clickedTradeDetails.spotData && (typeof clickedTradeDetails.spotData.capital === 'number') && (
                     <div className="mb-4">
                         <p className="font-semibold text-lg text-[#03B085]">Spot Account Snapshot</p>
@@ -413,7 +391,6 @@ export default function PnlSimulatorPage() {
                         )}
                     </div>
                 )}
-
                 {clickedTradeDetails.futuresData && (typeof clickedTradeDetails.futuresData.capital === 'number') && (
                      <div className={`${clickedTradeDetails.spotData ? 'mt-4 pt-3 border-t border-gray-700' : ''}`}>
                         <p className="font-semibold text-lg text-[#FFA500]">Futures Account Snapshot</p>
