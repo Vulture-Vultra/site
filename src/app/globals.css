@@ -10,3 +10,18 @@
 .body {
   scroll-behavior: smooth;
 }
+
+@keyframes drawLineUpGlobal {
+  0% {
+    stroke-dashoffset: 86;
+    opacity: 0.5;
+  }
+  50% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}

@@ -13,31 +13,21 @@ const CoinProvider = ({ children }) => {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [timeFrame, setTimeFrame] = useState("daily");
-  const [popupMessage, setPopupMessage] = useState(""); // State for popup message
-  const [isPopupVisible, setIsPopupVisible] = useState(false); // State to control popup visibility
+  const [popupMessage, setPopupMessage] = useState("");
+  const [isPopupVisible, setIsPopupVisible] = useState(false);
 
-  // Utility function to validate date format
   const validateDateFormat = (date) => {
-    const regex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/; // MM/dd/yyyy format
+    const regex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
     if (date instanceof Date && !isNaN(date)) {
-      return true; // Valid Date object
+      return true;
     } else if (typeof date === "string" && regex.test(date)) {
-      return true; // Matches MM/dd/yyyy format
+      return true;
     }
     return false;
   };
 
-  // Function to handle invalid dates
   const handleInvalidDates = (date, dateType) => {
     if (!validateDateFormat(date)) {
-      // Set the popup message and make it visible
-      // setPopupMessage(
-      //   `Invalid ${dateType} format. Please use MM/dd/yyyy. You will be redirected to the next page.`
-      // );
-      // setIsPopupVisible(true);
-
-      // Sending the invalid date to the next page (example logic)
-      
       return false;
     }
     return true;
@@ -62,24 +52,29 @@ const CoinProvider = ({ children }) => {
             const minDate = new Date(Math.min(...dates));
             const maxDate = new Date(Math.max(...dates));
 
-            // Validate and set startDate
             if (handleInvalidDates(minDate, "startDate")) {
               setStartDate(minDate);
             }
 
-            // Validate and set endDate
             if (handleInvalidDates(maxDate, "endDate")) {
               setEndDate(maxDate);
             }
           }
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Axios error:", error);
+        if (error.response) {
+          console.error("Response data:", error.response.data);
+          console.error("Status:", error.response.status);
+        } else if (error.request) {
+          console.error("No response received:", error.request);
+        } else {
+          console.error("Error message:", error.message);
+        }
       } finally {
         setIsLoading(false);
       }
     }
-
     fetchData();
   }, []);
 
@@ -87,9 +82,7 @@ const CoinProvider = ({ children }) => {
     if (selectedCoin === "All-Ticker") {
       setSelectedCoinData(coinsData);
     } else if (selectedCoin && coinsData.length > 0) {
-      const filteredData = coinsData.filter(
-        (item) => item.Ticker === selectedCoin
-      );
+      const filteredData = coinsData.filter((item) => item.Ticker === selectedCoin);
       setSelectedCoinData(filteredData);
     }
   }, [selectedCoin, coinsData]);
@@ -97,19 +90,13 @@ const CoinProvider = ({ children }) => {
   const resetFilters = () => {
     setSelectedCoin("All-Ticker");
     setTimeFrame("monthly");
-    const earliestDate = new Date(
-      Math.min(...coinsData.map((item) => new Date(item.Date)))
-    );
-    const latestDate = new Date(
-      Math.max(...coinsData.map((item) => new Date(item.Date)))
-    );
+    const earliestDate = new Date(Math.min(...coinsData.map((item) => new Date(item.Date))));
+    const latestDate = new Date(Math.max(...coinsData.map((item) => new Date(item.Date))));
 
-    // Validate and reset startDate
     if (handleInvalidDates(earliestDate, "startDate")) {
       setStartDate(earliestDate);
     }
 
-    // Validate and reset endDate
     if (handleInvalidDates(latestDate, "endDate")) {
       setEndDate(latestDate);
     }

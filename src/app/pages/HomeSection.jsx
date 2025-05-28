@@ -56,7 +56,9 @@ export default function HomeSection() {
 
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <a
-            href="#"
+            href="https://discord.gg/3QrBrNEa"
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-full rounded-full bg-[#C5A042] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-yellow-400 md:w-60"
           >
             GET FREE ALERT NOW
