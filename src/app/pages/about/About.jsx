@@ -39,14 +39,12 @@ function About() {
             </div>
 
             <div>
-              <h1 className="text-white font-manrope">
-                At VULTRA, our mission is to empower traders with the knowledge and tools they need to succeed in
-                dynamic financial markets. We are committed to providing actionable insights that help you make informed
-                decisions with confidence. Backed by a team of seasoned experts in technical analysis and advanced
-                trading strategies, VULTRA delivers data-driven guidance, real-time market trends, and proven
-                methodologies designed to maximize your trading potential. With VULTRA, you're not just trading—you're
-                trading smarter.
-              </h1>
+              <p className="text-white font-manrope text-justify">
+                At Vultra, we believe that everyone deserves the opportunity to enhance their financial well-being. Our core mission is to empower individuals by providing them with the knowledge and tools to explore trading as a viable additional income stream. We understand that for many, this journey isn't about replacing a full-time job overnight, but about creating breathing room, generating extra disposable income, and gaining more financial flexibility.			
+              </p>
+              <p className="text-white font-manrope text-justify mt-1">
+                Our commitment extends beyond the trading charts. We are deeply passionate about giving back to the global community. A portion of our proceeds and efforts are dedicated to philanthropic activities. We have proudly organized and participated in charitable trips to regions like Vietnam and Nigeria, delivering essential supplies such as food, clothing, and medical aid to those in need. We believe that true success includes lifting others, and we strive to make a positive impact both in the financial lives of our members and in communities around the world. Join us, and be part of a community that learns, earns, and gives back.			
+              </p>
             </div>
 
             {/* <div>

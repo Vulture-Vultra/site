@@ -78,11 +78,7 @@ function Cards() {
           <h1 className='text-white'>Youth Empowerment Programs</h1>
         </div>
       </div>
-      <div>
-        <button className='w-full px-3 sm:w-96 h-16 mt-10 rounded-full text-white backdrop-blur-md bg-[#C5A042] hover:bg-yellow-400 font-bold text-lg items-center'>
-          Learn More About Our Mission
-        </button> this button will be removed or hidden
-      </div>
+      {/* The button and its comment have been removed from here */}
     </div>
   )
 }
