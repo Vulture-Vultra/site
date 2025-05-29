@@ -91,10 +91,10 @@ export default function Banner() {
             </button>
             </a>
              <a
-              href="upgradechatlink" // Placeholder link for JOIN PREMIUM
+              href="https://upgrade.chat/vultra"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full md:w-60" // Apply width to anchor for proper layout
+              className="w-full md:w-60"
             >
             <button className="px-6 w-full md:w-60 py-2.5 bg-transparent border border-black text-[#00362E] rounded-full  transition-colors">
               JOIN PREMIUM

@@ -64,7 +64,9 @@ export default function HomeSection() {
             GET FREE ALERT NOW
           </a>
           <a
-            href="#"
+            href="https://upgrade.chat/vultra"
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-full rounded-full border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20 md:w-60"
           >
             EXPLORE PREMIUM PLANS
