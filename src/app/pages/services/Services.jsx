@@ -34,11 +34,11 @@ function Services() {
                 <h2 className="text-[#C5A042] text-md uppercase tracking-wider mb-2 font-poppins">SERVICES</h2>
                 <h1 className="text-2xl font-semibold font-manrope">Your Edge in the Market Starts Here</h1>
             </div>
-            <div ref={textRef} className={` flex flex-col lg:flex-row justify-center items-start gap-4${isVisible ? 'drop-in' : ''}`}>
+            <div ref={textRef} className={` flex flex-col lg:flex-row justify-center items-center gap-4${isVisible ? 'drop-in' : ''}`}>
 
             <div className='lg:w-2/3 w-full font-manrope'>
                 {/* MODIFIED: Changed to CSS Grid layout for the 4 boxes on lg screens */}
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='grid grid-cols-1 xl:grid-cols-2 gap-4'>
                   
                     {/* Box 1 - Premium Trading Signals */}
                     <div
@@ -51,7 +51,7 @@ function Services() {
                         >
                             <Image src='/service1.png' width={24} height={24} alt='Premium Trading Signals' />
                         </span>
-                        <h1 className='text-[#C5A042] font-bold text-lg mb-1'>Premium Trading Signals</h1>
+                        <h1 className='text-[#C5A042] font-bold text-lg mb-1'>Premium Trading Alerts</h1>
                         <p className='text-white text-sm text-justify'>
                           Receive high-probability trading signals across diverse markets including Stocks, Options, Crypto, Futures, and Commodities. Our signals are designed to help you build capital effectively as you learn.
                         </p>
@@ -67,7 +67,7 @@ function Services() {
                         >
                             <Image  src='/service3.png' width={24} height={24}  alt='Educational Resources & Mentorship'/>
                         </span>
-                        <h1 className='text-[#C5A042] font-bold text-lg mb-1'>Educational Resources & Mentorship</h1>
+                        <h1 className="text-[#C5A042] font-bold text-lg mb-1 whitespace-nowrap">Educational Resources & Mentorship</h1>
                         <p className='text-white text-sm text-justify'>
                           Accelerate your learning curve with our structured educational programs, resources, and direct mentorship. We focus on practical application to help you develop sustainable trading strategies.
                         </p>
